@@ -3041,3 +3041,147 @@ export const updateWellnessProviderSchema = insertWellnessProviderSchema.partial
 export type InsertWellnessProvider = z.infer<typeof insertWellnessProviderSchema>;
 export type UpdateWellnessProvider = z.infer<typeof updateWellnessProviderSchema>;
 export type WellnessProvider = typeof wellnessProviders.$inferSelect;
+
+// ============================================
+// TIME & ATTENDANCE SYSTEM
+// ============================================
+
+// Time Entries - Clock in/out records
+export const timeEntries = pgTable("time_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"),
+  employeeId: varchar("employee_id").references(() => employees.id),
+  date: date("date").notNull(),
+  clockIn: timestamp("clock_in"),
+  clockOut: timestamp("clock_out"),
+  breakMinutes: integer("break_minutes").default(0),
+  totalHours: real("total_hours"),
+  overtimeHours: real("overtime_hours").default(0),
+  status: text("status").notNull().default("clocked_in"), // 'clocked_in', 'clocked_out', 'absent', 'late', 'half_day'
+  notes: text("notes"),
+  location: text("location"), // GPS or office location
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvalStatus: text("approval_status").default("pending"), // 'pending', 'approved', 'rejected'
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  tenantIdIdx: index("time_entries_tenant_id_idx").on(table.tenantId),
+  employeeIdIdx: index("time_entries_employee_id_idx").on(table.employeeId),
+  dateIdx: index("time_entries_date_idx").on(table.date),
+}));
+
+export const insertTimeEntrySchema = createInsertSchema(timeEntries).omit({
+  id: true, tenantId: true, createdAt: true, updatedAt: true,
+});
+export const updateTimeEntrySchema = insertTimeEntrySchema.partial();
+export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
+export type UpdateTimeEntry = z.infer<typeof updateTimeEntrySchema>;
+export type TimeEntry = typeof timeEntries.$inferSelect;
+
+// Shifts - Shift definitions and scheduling
+export const shifts = pgTable("shifts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"),
+  name: text("name").notNull(),
+  startTime: text("start_time").notNull(), // HH:MM format
+  endTime: text("end_time").notNull(),
+  breakDuration: integer("break_duration").default(60), // minutes
+  color: text("color").default("#3B82F6"),
+  isOvernight: integer("is_overnight").default(0),
+  isActive: integer("is_active").default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  tenantIdIdx: index("shifts_tenant_id_idx").on(table.tenantId),
+}));
+
+export const insertShiftSchema = createInsertSchema(shifts).omit({
+  id: true, tenantId: true, createdAt: true, updatedAt: true,
+});
+export const updateShiftSchema = insertShiftSchema.partial();
+export type InsertShift = z.infer<typeof insertShiftSchema>;
+export type UpdateShift = z.infer<typeof updateShiftSchema>;
+export type Shift = typeof shifts.$inferSelect;
+
+// Shift Assignments - Assign employees to shifts
+export const shiftAssignments = pgTable("shift_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"),
+  employeeId: varchar("employee_id").references(() => employees.id),
+  shiftId: varchar("shift_id").references(() => shifts.id),
+  date: date("date").notNull(),
+  status: text("status").default("scheduled"), // 'scheduled', 'completed', 'missed', 'swapped'
+  swappedWith: varchar("swapped_with").references(() => employees.id),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  tenantIdIdx: index("shift_assignments_tenant_id_idx").on(table.tenantId),
+  employeeIdIdx: index("shift_assignments_employee_id_idx").on(table.employeeId),
+  dateIdx: index("shift_assignments_date_idx").on(table.date),
+}));
+
+export const insertShiftAssignmentSchema = createInsertSchema(shiftAssignments).omit({
+  id: true, tenantId: true, createdAt: true,
+});
+export type InsertShiftAssignment = z.infer<typeof insertShiftAssignmentSchema>;
+export type ShiftAssignment = typeof shiftAssignments.$inferSelect;
+
+// Timesheets - Weekly/monthly aggregated timesheets
+export const timesheets = pgTable("timesheets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"),
+  employeeId: varchar("employee_id").references(() => employees.id),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  totalRegularHours: real("total_regular_hours").default(0),
+  totalOvertimeHours: real("total_overtime_hours").default(0),
+  totalDaysWorked: integer("total_days_worked").default(0),
+  totalAbsentDays: integer("total_absent_days").default(0),
+  totalLateDays: integer("total_late_days").default(0),
+  status: text("status").default("draft"), // 'draft', 'submitted', 'approved', 'rejected'
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  tenantIdIdx: index("timesheets_tenant_id_idx").on(table.tenantId),
+  employeeIdIdx: index("timesheets_employee_id_idx").on(table.employeeId),
+}));
+
+export const insertTimesheetSchema = createInsertSchema(timesheets).omit({
+  id: true, tenantId: true, createdAt: true, updatedAt: true,
+});
+export const updateTimesheetSchema = insertTimesheetSchema.partial();
+export type InsertTimesheet = z.infer<typeof insertTimesheetSchema>;
+export type UpdateTimesheet = z.infer<typeof updateTimesheetSchema>;
+export type Timesheet = typeof timesheets.$inferSelect;
+
+// Attendance Policies
+export const attendancePolicies = pgTable("attendance_policies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"),
+  name: text("name").notNull(),
+  workingHoursPerDay: real("working_hours_per_day").default(8),
+  workingDaysPerWeek: integer("working_days_per_week").default(5),
+  overtimeThreshold: real("overtime_threshold").default(8), // hours per day before overtime kicks in
+  lateThresholdMinutes: integer("late_threshold_minutes").default(15),
+  halfDayHours: real("half_day_hours").default(4),
+  requireLocationTracking: integer("require_location_tracking").default(0),
+  autoClockOut: integer("auto_clock_out").default(0),
+  autoClockOutTime: text("auto_clock_out_time"), // HH:MM
+  isDefault: integer("is_default").default(0),
+  isActive: integer("is_active").default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  tenantIdIdx: index("attendance_policies_tenant_id_idx").on(table.tenantId),
+}));
+
+export const insertAttendancePolicySchema = createInsertSchema(attendancePolicies).omit({
+  id: true, tenantId: true, createdAt: true, updatedAt: true,
+});
+export const updateAttendancePolicySchema = insertAttendancePolicySchema.partial();
+export type InsertAttendancePolicy = z.infer<typeof insertAttendancePolicySchema>;
+export type UpdateAttendancePolicy = z.infer<typeof updateAttendancePolicySchema>;
+export type AttendancePolicy = typeof attendancePolicies.$inferSelect;

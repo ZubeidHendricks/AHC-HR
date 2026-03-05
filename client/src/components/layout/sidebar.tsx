@@ -72,7 +72,7 @@ export function Sidebar() {
         { name: "Claims", href: "/claims-management", icon: FileText },
         { name: "Pulse Survey", href: "/pulse-survey", icon: Heart },
         { name: "Compliance", href: "/compliance", icon: Scale },
-        { name: "Time & Attendance", href: "https://carta-ta-ji5og.ondigitalocean.app/", icon: Cpu, external: true },
+        { name: "Time & Attendance", href: "/time-attendance", icon: Cpu },
         { name: "LMS", href: "http://165.227.113.197/", icon: BookOpen, external: true },
       ]
     },

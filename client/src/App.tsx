@@ -81,6 +81,7 @@ import LeaveManagement from "@/pages/leave-management";
 import ClaimsManagement from "@/pages/claims-management";
 import LeaveSetup from "@/pages/leave-setup";
 import ClaimsSetup from "@/pages/claims-setup";
+import TimeAttendance from "@/pages/time-attendance";
 
 function Router() {
   return (
@@ -159,6 +160,7 @@ function Router() {
       <Route path="/claims-management" component={ClaimsManagement} />
       <Route path="/leave-setup" component={LeaveSetup} />
       <Route path="/claims-setup" component={ClaimsSetup} />
+      <Route path="/time-attendance" component={TimeAttendance} />
       <Route component={NotFound} />
     </Switch>
   );

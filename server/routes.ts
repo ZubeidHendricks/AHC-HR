@@ -10358,6 +10358,240 @@ Format your response as JSON:
     }
   });
 
+  // ============================================
+  // TIME & ATTENDANCE
+  // ============================================
+
+  // Time Entries
+  app.get("/api/time-entries", async (req, res) => {
+    try {
+      const { employeeId, date } = req.query;
+      const entries = await storage.getTimeEntries(req.tenant.id, employeeId as string, date as string);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching time entries:", error);
+      res.status(500).json({ message: "Failed to fetch time entries" });
+    }
+  });
+
+  app.post("/api/time-entries", async (req, res) => {
+    try {
+      const entry = await storage.createTimeEntry(req.tenant.id, req.body);
+      res.status(201).json(entry);
+    } catch (error) {
+      console.error("Error creating time entry:", error);
+      res.status(500).json({ message: "Failed to create time entry" });
+    }
+  });
+
+  app.patch("/api/time-entries/:id", async (req, res) => {
+    try {
+      const entry = await storage.updateTimeEntry(req.tenant.id, req.params.id, req.body);
+      if (!entry) return res.status(404).json({ message: "Time entry not found" });
+      res.json(entry);
+    } catch (error) {
+      console.error("Error updating time entry:", error);
+      res.status(500).json({ message: "Failed to update time entry" });
+    }
+  });
+
+  app.delete("/api/time-entries/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteTimeEntry(req.tenant.id, req.params.id);
+      if (!success) return res.status(404).json({ message: "Time entry not found" });
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting time entry:", error);
+      res.status(500).json({ message: "Failed to delete time entry" });
+    }
+  });
+
+  // Clock In/Out shortcut
+  app.post("/api/time-entries/clock-in", async (req, res) => {
+    try {
+      const { employeeId, location } = req.body;
+      const now = new Date();
+      const entry = await storage.createTimeEntry(req.tenant.id, {
+        employeeId,
+        date: now.toISOString().split("T")[0],
+        clockIn: now,
+        status: "clocked_in",
+        location,
+      });
+      res.status(201).json(entry);
+    } catch (error) {
+      console.error("Error clocking in:", error);
+      res.status(500).json({ message: "Failed to clock in" });
+    }
+  });
+
+  app.post("/api/time-entries/clock-out/:id", async (req, res) => {
+    try {
+      const now = new Date();
+      const entry = await storage.updateTimeEntry(req.tenant.id, req.params.id, {
+        clockOut: now,
+        status: "clocked_out",
+      });
+      if (!entry) return res.status(404).json({ message: "Time entry not found" });
+      // Calculate total hours
+      if (entry.clockIn) {
+        const diffMs = now.getTime() - new Date(entry.clockIn).getTime();
+        const totalHours = Math.round((diffMs / (1000 * 60 * 60) - (entry.breakMinutes || 0) / 60) * 100) / 100;
+        const overtimeHours = Math.max(0, totalHours - 8);
+        const updated = await storage.updateTimeEntry(req.tenant.id, req.params.id, {
+          totalHours,
+          overtimeHours,
+        });
+        return res.json(updated);
+      }
+      res.json(entry);
+    } catch (error) {
+      console.error("Error clocking out:", error);
+      res.status(500).json({ message: "Failed to clock out" });
+    }
+  });
+
+  // Shifts
+  app.get("/api/shifts", async (req, res) => {
+    try {
+      const shifts = await storage.getShifts(req.tenant.id);
+      res.json(shifts);
+    } catch (error) {
+      console.error("Error fetching shifts:", error);
+      res.status(500).json({ message: "Failed to fetch shifts" });
+    }
+  });
+
+  app.post("/api/shifts", async (req, res) => {
+    try {
+      const shift = await storage.createShift(req.tenant.id, req.body);
+      res.status(201).json(shift);
+    } catch (error) {
+      console.error("Error creating shift:", error);
+      res.status(500).json({ message: "Failed to create shift" });
+    }
+  });
+
+  app.patch("/api/shifts/:id", async (req, res) => {
+    try {
+      const shift = await storage.updateShift(req.tenant.id, req.params.id, req.body);
+      if (!shift) return res.status(404).json({ message: "Shift not found" });
+      res.json(shift);
+    } catch (error) {
+      console.error("Error updating shift:", error);
+      res.status(500).json({ message: "Failed to update shift" });
+    }
+  });
+
+  app.delete("/api/shifts/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteShift(req.tenant.id, req.params.id);
+      if (!success) return res.status(404).json({ message: "Shift not found" });
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting shift:", error);
+      res.status(500).json({ message: "Failed to delete shift" });
+    }
+  });
+
+  // Shift Assignments
+  app.get("/api/shift-assignments", async (req, res) => {
+    try {
+      const { date } = req.query;
+      const assignments = await storage.getShiftAssignments(req.tenant.id, date as string);
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching shift assignments:", error);
+      res.status(500).json({ message: "Failed to fetch shift assignments" });
+    }
+  });
+
+  app.post("/api/shift-assignments", async (req, res) => {
+    try {
+      const assignment = await storage.createShiftAssignment(req.tenant.id, req.body);
+      res.status(201).json(assignment);
+    } catch (error) {
+      console.error("Error creating shift assignment:", error);
+      res.status(500).json({ message: "Failed to create shift assignment" });
+    }
+  });
+
+  // Timesheets
+  app.get("/api/timesheets", async (req, res) => {
+    try {
+      const { employeeId } = req.query;
+      const sheets = await storage.getTimesheets(req.tenant.id, employeeId as string);
+      res.json(sheets);
+    } catch (error) {
+      console.error("Error fetching timesheets:", error);
+      res.status(500).json({ message: "Failed to fetch timesheets" });
+    }
+  });
+
+  app.post("/api/timesheets", async (req, res) => {
+    try {
+      const sheet = await storage.createTimesheet(req.tenant.id, req.body);
+      res.status(201).json(sheet);
+    } catch (error) {
+      console.error("Error creating timesheet:", error);
+      res.status(500).json({ message: "Failed to create timesheet" });
+    }
+  });
+
+  app.patch("/api/timesheets/:id", async (req, res) => {
+    try {
+      const sheet = await storage.updateTimesheet(req.tenant.id, req.params.id, req.body);
+      if (!sheet) return res.status(404).json({ message: "Timesheet not found" });
+      res.json(sheet);
+    } catch (error) {
+      console.error("Error updating timesheet:", error);
+      res.status(500).json({ message: "Failed to update timesheet" });
+    }
+  });
+
+  // Attendance Policies
+  app.get("/api/attendance-policies", async (req, res) => {
+    try {
+      const policies = await storage.getAttendancePolicies(req.tenant.id);
+      res.json(policies);
+    } catch (error) {
+      console.error("Error fetching attendance policies:", error);
+      res.status(500).json({ message: "Failed to fetch attendance policies" });
+    }
+  });
+
+  app.post("/api/attendance-policies", async (req, res) => {
+    try {
+      const policy = await storage.createAttendancePolicy(req.tenant.id, req.body);
+      res.status(201).json(policy);
+    } catch (error) {
+      console.error("Error creating attendance policy:", error);
+      res.status(500).json({ message: "Failed to create attendance policy" });
+    }
+  });
+
+  app.patch("/api/attendance-policies/:id", async (req, res) => {
+    try {
+      const policy = await storage.updateAttendancePolicy(req.tenant.id, req.params.id, req.body);
+      if (!policy) return res.status(404).json({ message: "Attendance policy not found" });
+      res.json(policy);
+    } catch (error) {
+      console.error("Error updating attendance policy:", error);
+      res.status(500).json({ message: "Failed to update attendance policy" });
+    }
+  });
+
+  app.delete("/api/attendance-policies/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteAttendancePolicy(req.tenant.id, req.params.id);
+      if (!success) return res.status(404).json({ message: "Attendance policy not found" });
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting attendance policy:", error);
+      res.status(500).json({ message: "Failed to delete attendance policy" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

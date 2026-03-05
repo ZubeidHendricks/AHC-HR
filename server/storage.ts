@@ -239,6 +239,25 @@ import {
   type WellnessProvider,
   type InsertWellnessProvider,
   type UpdateWellnessProvider,
+  timeEntries,
+  shifts,
+  shiftAssignments,
+  timesheets,
+  attendancePolicies,
+  type TimeEntry,
+  type InsertTimeEntry,
+  type UpdateTimeEntry,
+  type Shift,
+  type InsertShift,
+  type UpdateShift,
+  type ShiftAssignment,
+  type InsertShiftAssignment,
+  type Timesheet,
+  type InsertTimesheet,
+  type UpdateTimesheet,
+  type AttendancePolicy,
+  type InsertAttendancePolicy,
+  type UpdateAttendancePolicy,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, lte, sql, isNull, isNotNull, or } from "drizzle-orm";
@@ -712,6 +731,29 @@ export interface IStorage {
   createWellnessProvider(tenantId: string, provider: InsertWellnessProvider): Promise<WellnessProvider>;
   updateWellnessProvider(tenantId: string, id: string, updates: UpdateWellnessProvider): Promise<WellnessProvider | undefined>;
   deleteWellnessProvider(tenantId: string, id: string): Promise<boolean>;
+
+  // Time & Attendance
+  getTimeEntries(tenantId: string, employeeId?: string, date?: string): Promise<TimeEntry[]>;
+  createTimeEntry(tenantId: string, entry: InsertTimeEntry): Promise<TimeEntry>;
+  updateTimeEntry(tenantId: string, id: string, updates: UpdateTimeEntry): Promise<TimeEntry | undefined>;
+  deleteTimeEntry(tenantId: string, id: string): Promise<boolean>;
+
+  getShifts(tenantId: string): Promise<Shift[]>;
+  createShift(tenantId: string, shift: InsertShift): Promise<Shift>;
+  updateShift(tenantId: string, id: string, updates: UpdateShift): Promise<Shift | undefined>;
+  deleteShift(tenantId: string, id: string): Promise<boolean>;
+
+  getShiftAssignments(tenantId: string, date?: string): Promise<ShiftAssignment[]>;
+  createShiftAssignment(tenantId: string, assignment: InsertShiftAssignment): Promise<ShiftAssignment>;
+
+  getTimesheets(tenantId: string, employeeId?: string): Promise<Timesheet[]>;
+  createTimesheet(tenantId: string, timesheet: InsertTimesheet): Promise<Timesheet>;
+  updateTimesheet(tenantId: string, id: string, updates: UpdateTimesheet): Promise<Timesheet | undefined>;
+
+  getAttendancePolicies(tenantId: string): Promise<AttendancePolicy[]>;
+  createAttendancePolicy(tenantId: string, policy: InsertAttendancePolicy): Promise<AttendancePolicy>;
+  updateAttendancePolicy(tenantId: string, id: string, updates: UpdateAttendancePolicy): Promise<AttendancePolicy | undefined>;
+  deleteAttendancePolicy(tenantId: string, id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4021,6 +4063,108 @@ export class DatabaseStorage implements IStorage {
   async deleteWellnessProvider(tenantId: string, id: string): Promise<boolean> {
     const result = await db.delete(wellnessProviders)
       .where(and(eq(wellnessProviders.id, id), eq(wellnessProviders.tenantId, tenantId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  // Time & Attendance
+  async getTimeEntries(tenantId: string, employeeId?: string, date?: string): Promise<TimeEntry[]> {
+    const conditions = [eq(timeEntries.tenantId, tenantId)];
+    if (employeeId) conditions.push(eq(timeEntries.employeeId, employeeId));
+    if (date) conditions.push(eq(timeEntries.date, date));
+    return db.select().from(timeEntries).where(and(...conditions)).orderBy(desc(timeEntries.date));
+  }
+
+  async createTimeEntry(tenantId: string, entry: InsertTimeEntry): Promise<TimeEntry> {
+    const [newEntry] = await db.insert(timeEntries).values({ ...entry, tenantId }).returning();
+    return newEntry;
+  }
+
+  async updateTimeEntry(tenantId: string, id: string, updates: UpdateTimeEntry): Promise<TimeEntry | undefined> {
+    const [entry] = await db.update(timeEntries)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(timeEntries.id, id), eq(timeEntries.tenantId, tenantId)))
+      .returning();
+    return entry;
+  }
+
+  async deleteTimeEntry(tenantId: string, id: string): Promise<boolean> {
+    const result = await db.delete(timeEntries)
+      .where(and(eq(timeEntries.id, id), eq(timeEntries.tenantId, tenantId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getShifts(tenantId: string): Promise<Shift[]> {
+    return db.select().from(shifts).where(eq(shifts.tenantId, tenantId)).orderBy(shifts.name);
+  }
+
+  async createShift(tenantId: string, shift: InsertShift): Promise<Shift> {
+    const [newShift] = await db.insert(shifts).values({ ...shift, tenantId }).returning();
+    return newShift;
+  }
+
+  async updateShift(tenantId: string, id: string, updates: UpdateShift): Promise<Shift | undefined> {
+    const [shift] = await db.update(shifts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(shifts.id, id), eq(shifts.tenantId, tenantId)))
+      .returning();
+    return shift;
+  }
+
+  async deleteShift(tenantId: string, id: string): Promise<boolean> {
+    const result = await db.delete(shifts)
+      .where(and(eq(shifts.id, id), eq(shifts.tenantId, tenantId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getShiftAssignments(tenantId: string, date?: string): Promise<ShiftAssignment[]> {
+    const conditions = [eq(shiftAssignments.tenantId, tenantId)];
+    if (date) conditions.push(eq(shiftAssignments.date, date));
+    return db.select().from(shiftAssignments).where(and(...conditions)).orderBy(desc(shiftAssignments.date));
+  }
+
+  async createShiftAssignment(tenantId: string, assignment: InsertShiftAssignment): Promise<ShiftAssignment> {
+    const [newAssignment] = await db.insert(shiftAssignments).values({ ...assignment, tenantId }).returning();
+    return newAssignment;
+  }
+
+  async getTimesheets(tenantId: string, employeeId?: string): Promise<Timesheet[]> {
+    const conditions = [eq(timesheets.tenantId, tenantId)];
+    if (employeeId) conditions.push(eq(timesheets.employeeId, employeeId));
+    return db.select().from(timesheets).where(and(...conditions)).orderBy(desc(timesheets.periodStart));
+  }
+
+  async createTimesheet(tenantId: string, timesheet: InsertTimesheet): Promise<Timesheet> {
+    const [newTimesheet] = await db.insert(timesheets).values({ ...timesheet, tenantId }).returning();
+    return newTimesheet;
+  }
+
+  async updateTimesheet(tenantId: string, id: string, updates: UpdateTimesheet): Promise<Timesheet | undefined> {
+    const [sheet] = await db.update(timesheets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(timesheets.id, id), eq(timesheets.tenantId, tenantId)))
+      .returning();
+    return sheet;
+  }
+
+  async getAttendancePolicies(tenantId: string): Promise<AttendancePolicy[]> {
+    return db.select().from(attendancePolicies).where(eq(attendancePolicies.tenantId, tenantId));
+  }
+
+  async createAttendancePolicy(tenantId: string, policy: InsertAttendancePolicy): Promise<AttendancePolicy> {
+    const [newPolicy] = await db.insert(attendancePolicies).values({ ...policy, tenantId }).returning();
+    return newPolicy;
+  }
+
+  async updateAttendancePolicy(tenantId: string, id: string, updates: UpdateAttendancePolicy): Promise<AttendancePolicy | undefined> {
+    const [policy] = await db.update(attendancePolicies)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(attendancePolicies.id, id), eq(attendancePolicies.tenantId, tenantId)))
+      .returning();
+    return policy;
+  }
+
+  async deleteAttendancePolicy(tenantId: string, id: string): Promise<boolean> {
+    const result = await db.delete(attendancePolicies)
+      .where(and(eq(attendancePolicies.id, id), eq(attendancePolicies.tenantId, tenantId)));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }
