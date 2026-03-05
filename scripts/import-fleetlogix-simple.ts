@@ -1,23 +1,17 @@
 import XLSX from 'xlsx';
 import { config } from 'dotenv';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import ws from 'ws';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
 import * as schema from '../shared/schema';
 
-// Load environment variables FIRST
 config();
 
-// Configure WebSocket
-neonConfig.webSocketConstructor = ws;
-
-// Create database connection
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL must be set');
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const db = drizzle({ client: pool, schema });
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const db = drizzle(pool, { schema });
 
 const TENANT_ID = '1580efd0-8445-4afb-b961-d20ca180246b'; // FleetLogix tenant
 

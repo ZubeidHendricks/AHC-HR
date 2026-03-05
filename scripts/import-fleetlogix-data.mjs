@@ -1,12 +1,8 @@
 import XLSX from 'xlsx';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import ws from 'ws';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
 import { sql } from 'drizzle-orm';
 import { pgTable, serial, text, date, decimal, integer, timestamp, boolean } from 'drizzle-orm/pg-core';
-
-// Configure WebSocket for Neon
-neonConfig.webSocketConstructor = ws;
 
 // Define schemas inline to avoid TypeScript issues
 const fleetlogixDrivers = pgTable("fleetlogix_drivers", {
@@ -68,8 +64,8 @@ const fleetlogixLoads = pgTable("fleetlogix_loads", {
 });
 
 // Setup database connection
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const db = drizzle({ client: pool });
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const db = drizzle(pool);
 
 const TENANT_ID = 1; // Default tenant ID
 
