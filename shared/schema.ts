@@ -3185,3 +3185,96 @@ export const updateAttendancePolicySchema = insertAttendancePolicySchema.partial
 export type InsertAttendancePolicy = z.infer<typeof insertAttendancePolicySchema>;
 export type UpdateAttendancePolicy = z.infer<typeof updateAttendancePolicySchema>;
 export type AttendancePolicy = typeof attendancePolicies.$inferSelect;
+
+// ============================================
+// LEAVE & CLAIMS SETUP CONFIGURATION
+// ============================================
+
+// Leave Types - Configurable leave type definitions per tenant
+export const leaveTypes = pgTable("leave_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"),
+  name: text("name").notNull(),
+  daysPerYear: integer("days_per_year").default(0),
+  carryOver: integer("carry_over").default(0), // 1 = yes
+  paid: integer("paid").default(1), // 1 = paid
+  requiresApproval: integer("requires_approval").default(1),
+  requiresDocumentation: integer("requires_documentation").default(0),
+  isActive: integer("is_active").default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  tenantIdIdx: index("leave_types_tenant_id_idx").on(table.tenantId),
+}));
+
+export const insertLeaveTypeSchema = createInsertSchema(leaveTypes).omit({
+  id: true, tenantId: true, createdAt: true, updatedAt: true,
+});
+export const updateLeaveTypeSchema = insertLeaveTypeSchema.partial();
+export type InsertLeaveType = z.infer<typeof insertLeaveTypeSchema>;
+export type UpdateLeaveType = z.infer<typeof updateLeaveTypeSchema>;
+export type LeaveType = typeof leaveTypes.$inferSelect;
+
+// Leave Policies - General leave policy settings per tenant
+export const leavePolicies = pgTable("leave_policies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").unique(),
+  requireManagerApproval: integer("require_manager_approval").default(1),
+  autoApproveAfterDeadline: integer("auto_approve_after_deadline").default(0),
+  allowNegativeBalance: integer("allow_negative_balance").default(0),
+  syncWithPayroll: integer("sync_with_payroll").default(1),
+  approvalDeadlineDays: integer("approval_deadline_days").default(3),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertLeavePolicySchema = createInsertSchema(leavePolicies).omit({
+  id: true, tenantId: true, createdAt: true, updatedAt: true,
+});
+export const updateLeavePolicySchema = insertLeavePolicySchema.partial();
+export type InsertLeavePolicy = z.infer<typeof insertLeavePolicySchema>;
+export type UpdateLeavePolicy = z.infer<typeof updateLeavePolicySchema>;
+export type LeavePolicy = typeof leavePolicies.$inferSelect;
+
+// Claim Types - Configurable claim type definitions per tenant
+export const claimTypes = pgTable("claim_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id"),
+  name: text("name").notNull(),
+  maxAmount: real("max_amount").default(0),
+  requiresReceipt: integer("requires_receipt").default(1),
+  autoApproveUnder: real("auto_approve_under").default(0),
+  isActive: integer("is_active").default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  tenantIdIdx: index("claim_types_tenant_id_idx").on(table.tenantId),
+}));
+
+export const insertClaimTypeSchema = createInsertSchema(claimTypes).omit({
+  id: true, tenantId: true, createdAt: true, updatedAt: true,
+});
+export const updateClaimTypeSchema = insertClaimTypeSchema.partial();
+export type InsertClaimType = z.infer<typeof insertClaimTypeSchema>;
+export type UpdateClaimType = z.infer<typeof updateClaimTypeSchema>;
+export type ClaimType = typeof claimTypes.$inferSelect;
+
+// Claims Policies - General claims policy settings per tenant
+export const claimsPolicies = pgTable("claims_policies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").unique(),
+  requireManagerApproval: integer("require_manager_approval").default(1),
+  requireReceiptUpload: integer("require_receipt_upload").default(1),
+  monthlyClaimLimit: real("monthly_claim_limit").default(10000),
+  syncWithPayroll: integer("sync_with_payroll").default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertClaimsPolicySchema = createInsertSchema(claimsPolicies).omit({
+  id: true, tenantId: true, createdAt: true, updatedAt: true,
+});
+export const updateClaimsPolicySchema = insertClaimsPolicySchema.partial();
+export type InsertClaimsPolicy = z.infer<typeof insertClaimsPolicySchema>;
+export type UpdateClaimsPolicy = z.infer<typeof updateClaimsPolicySchema>;
+export type ClaimsPolicy = typeof claimsPolicies.$inferSelect;

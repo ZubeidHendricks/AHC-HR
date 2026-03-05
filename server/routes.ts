@@ -10359,6 +10359,138 @@ Format your response as JSON:
   });
 
   // ============================================
+  // LEAVE SETUP
+  // ============================================
+
+  app.get("/api/leave-types", async (req, res) => {
+    try {
+      const types = await storage.getLeaveTypes(req.tenant.id);
+      res.json(types);
+    } catch (error) {
+      console.error("Error fetching leave types:", error);
+      res.status(500).json({ message: "Failed to fetch leave types" });
+    }
+  });
+
+  app.post("/api/leave-types", async (req, res) => {
+    try {
+      const type = await storage.createLeaveType(req.tenant.id, req.body);
+      res.status(201).json(type);
+    } catch (error) {
+      console.error("Error creating leave type:", error);
+      res.status(500).json({ message: "Failed to create leave type" });
+    }
+  });
+
+  app.patch("/api/leave-types/:id", async (req, res) => {
+    try {
+      const type = await storage.updateLeaveType(req.tenant.id, req.params.id, req.body);
+      if (!type) return res.status(404).json({ message: "Leave type not found" });
+      res.json(type);
+    } catch (error) {
+      console.error("Error updating leave type:", error);
+      res.status(500).json({ message: "Failed to update leave type" });
+    }
+  });
+
+  app.delete("/api/leave-types/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteLeaveType(req.tenant.id, req.params.id);
+      if (!success) return res.status(404).json({ message: "Leave type not found" });
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting leave type:", error);
+      res.status(500).json({ message: "Failed to delete leave type" });
+    }
+  });
+
+  app.get("/api/leave-policy", async (req, res) => {
+    try {
+      const policy = await storage.getLeavePolicy(req.tenant.id);
+      res.json(policy || null);
+    } catch (error) {
+      console.error("Error fetching leave policy:", error);
+      res.status(500).json({ message: "Failed to fetch leave policy" });
+    }
+  });
+
+  app.put("/api/leave-policy", async (req, res) => {
+    try {
+      const policy = await storage.upsertLeavePolicy(req.tenant.id, req.body);
+      res.json(policy);
+    } catch (error) {
+      console.error("Error saving leave policy:", error);
+      res.status(500).json({ message: "Failed to save leave policy" });
+    }
+  });
+
+  // ============================================
+  // CLAIMS SETUP
+  // ============================================
+
+  app.get("/api/claim-types", async (req, res) => {
+    try {
+      const types = await storage.getClaimTypes(req.tenant.id);
+      res.json(types);
+    } catch (error) {
+      console.error("Error fetching claim types:", error);
+      res.status(500).json({ message: "Failed to fetch claim types" });
+    }
+  });
+
+  app.post("/api/claim-types", async (req, res) => {
+    try {
+      const type = await storage.createClaimType(req.tenant.id, req.body);
+      res.status(201).json(type);
+    } catch (error) {
+      console.error("Error creating claim type:", error);
+      res.status(500).json({ message: "Failed to create claim type" });
+    }
+  });
+
+  app.patch("/api/claim-types/:id", async (req, res) => {
+    try {
+      const type = await storage.updateClaimType(req.tenant.id, req.params.id, req.body);
+      if (!type) return res.status(404).json({ message: "Claim type not found" });
+      res.json(type);
+    } catch (error) {
+      console.error("Error updating claim type:", error);
+      res.status(500).json({ message: "Failed to update claim type" });
+    }
+  });
+
+  app.delete("/api/claim-types/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteClaimType(req.tenant.id, req.params.id);
+      if (!success) return res.status(404).json({ message: "Claim type not found" });
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting claim type:", error);
+      res.status(500).json({ message: "Failed to delete claim type" });
+    }
+  });
+
+  app.get("/api/claims-policy", async (req, res) => {
+    try {
+      const policy = await storage.getClaimsPolicy(req.tenant.id);
+      res.json(policy || null);
+    } catch (error) {
+      console.error("Error fetching claims policy:", error);
+      res.status(500).json({ message: "Failed to fetch claims policy" });
+    }
+  });
+
+  app.put("/api/claims-policy", async (req, res) => {
+    try {
+      const policy = await storage.upsertClaimsPolicy(req.tenant.id, req.body);
+      res.json(policy);
+    } catch (error) {
+      console.error("Error saving claims policy:", error);
+      res.status(500).json({ message: "Failed to save claims policy" });
+    }
+  });
+
+  // ============================================
   // TIME & ATTENDANCE
   // ============================================
 

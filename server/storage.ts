@@ -258,6 +258,22 @@ import {
   type AttendancePolicy,
   type InsertAttendancePolicy,
   type UpdateAttendancePolicy,
+  leaveTypes,
+  leavePolicies,
+  claimTypes,
+  claimsPolicies,
+  type LeaveType,
+  type InsertLeaveType,
+  type UpdateLeaveType,
+  type LeavePolicy,
+  type InsertLeavePolicy,
+  type UpdateLeavePolicy,
+  type ClaimType,
+  type InsertClaimType,
+  type UpdateClaimType,
+  type ClaimsPolicy,
+  type InsertClaimsPolicy,
+  type UpdateClaimsPolicy,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, lte, sql, isNull, isNotNull, or } from "drizzle-orm";
@@ -754,6 +770,22 @@ export interface IStorage {
   createAttendancePolicy(tenantId: string, policy: InsertAttendancePolicy): Promise<AttendancePolicy>;
   updateAttendancePolicy(tenantId: string, id: string, updates: UpdateAttendancePolicy): Promise<AttendancePolicy | undefined>;
   deleteAttendancePolicy(tenantId: string, id: string): Promise<boolean>;
+
+  // Leave Setup
+  getLeaveTypes(tenantId: string): Promise<LeaveType[]>;
+  createLeaveType(tenantId: string, lt: InsertLeaveType): Promise<LeaveType>;
+  updateLeaveType(tenantId: string, id: string, updates: UpdateLeaveType): Promise<LeaveType | undefined>;
+  deleteLeaveType(tenantId: string, id: string): Promise<boolean>;
+  getLeavePolicy(tenantId: string): Promise<LeavePolicy | undefined>;
+  upsertLeavePolicy(tenantId: string, policy: InsertLeavePolicy): Promise<LeavePolicy>;
+
+  // Claims Setup
+  getClaimTypes(tenantId: string): Promise<ClaimType[]>;
+  createClaimType(tenantId: string, ct: InsertClaimType): Promise<ClaimType>;
+  updateClaimType(tenantId: string, id: string, updates: UpdateClaimType): Promise<ClaimType | undefined>;
+  deleteClaimType(tenantId: string, id: string): Promise<boolean>;
+  getClaimsPolicy(tenantId: string): Promise<ClaimsPolicy | undefined>;
+  upsertClaimsPolicy(tenantId: string, policy: InsertClaimsPolicy): Promise<ClaimsPolicy>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4166,6 +4198,90 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(attendancePolicies)
       .where(and(eq(attendancePolicies.id, id), eq(attendancePolicies.tenantId, tenantId)));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Leave Setup
+  async getLeaveTypes(tenantId: string): Promise<LeaveType[]> {
+    return db.select().from(leaveTypes).where(eq(leaveTypes.tenantId, tenantId)).orderBy(leaveTypes.name);
+  }
+
+  async createLeaveType(tenantId: string, lt: InsertLeaveType): Promise<LeaveType> {
+    const [newType] = await db.insert(leaveTypes).values({ ...lt, tenantId }).returning();
+    return newType;
+  }
+
+  async updateLeaveType(tenantId: string, id: string, updates: UpdateLeaveType): Promise<LeaveType | undefined> {
+    const [updated] = await db.update(leaveTypes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(leaveTypes.id, id), eq(leaveTypes.tenantId, tenantId)))
+      .returning();
+    return updated;
+  }
+
+  async deleteLeaveType(tenantId: string, id: string): Promise<boolean> {
+    const result = await db.delete(leaveTypes)
+      .where(and(eq(leaveTypes.id, id), eq(leaveTypes.tenantId, tenantId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getLeavePolicy(tenantId: string): Promise<LeavePolicy | undefined> {
+    const [policy] = await db.select().from(leavePolicies).where(eq(leavePolicies.tenantId, tenantId));
+    return policy;
+  }
+
+  async upsertLeavePolicy(tenantId: string, policy: InsertLeavePolicy): Promise<LeavePolicy> {
+    const existing = await this.getLeavePolicy(tenantId);
+    if (existing) {
+      const [updated] = await db.update(leavePolicies)
+        .set({ ...policy, updatedAt: new Date() })
+        .where(eq(leavePolicies.tenantId, tenantId))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(leavePolicies).values({ ...policy, tenantId }).returning();
+    return created;
+  }
+
+  // Claims Setup
+  async getClaimTypes(tenantId: string): Promise<ClaimType[]> {
+    return db.select().from(claimTypes).where(eq(claimTypes.tenantId, tenantId)).orderBy(claimTypes.name);
+  }
+
+  async createClaimType(tenantId: string, ct: InsertClaimType): Promise<ClaimType> {
+    const [newType] = await db.insert(claimTypes).values({ ...ct, tenantId }).returning();
+    return newType;
+  }
+
+  async updateClaimType(tenantId: string, id: string, updates: UpdateClaimType): Promise<ClaimType | undefined> {
+    const [updated] = await db.update(claimTypes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(claimTypes.id, id), eq(claimTypes.tenantId, tenantId)))
+      .returning();
+    return updated;
+  }
+
+  async deleteClaimType(tenantId: string, id: string): Promise<boolean> {
+    const result = await db.delete(claimTypes)
+      .where(and(eq(claimTypes.id, id), eq(claimTypes.tenantId, tenantId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getClaimsPolicy(tenantId: string): Promise<ClaimsPolicy | undefined> {
+    const [policy] = await db.select().from(claimsPolicies).where(eq(claimsPolicies.tenantId, tenantId));
+    return policy;
+  }
+
+  async upsertClaimsPolicy(tenantId: string, policy: InsertClaimsPolicy): Promise<ClaimsPolicy> {
+    const existing = await this.getClaimsPolicy(tenantId);
+    if (existing) {
+      const [updated] = await db.update(claimsPolicies)
+        .set({ ...policy, updatedAt: new Date() })
+        .where(eq(claimsPolicies.tenantId, tenantId))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(claimsPolicies).values({ ...policy, tenantId }).returning();
+    return created;
   }
 }
 
