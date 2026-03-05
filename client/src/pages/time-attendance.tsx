@@ -89,22 +89,34 @@ export default function TimeAttendance() {
 
   const { data: timeEntries = [], isLoading: loadingEntries } = useQuery<TimeEntry[]>({
     queryKey: timeEntriesKey,
-    queryFn: async () => (await api.get(`/time-entries?date=${selectedDate}`)).data,
+    queryFn: async () => {
+      const res = await api.get(`/time-entries?date=${selectedDate}`);
+      return Array.isArray(res.data) ? res.data : [];
+    },
   });
 
   const { data: allTimeEntries = [] } = useQuery<TimeEntry[]>({
     queryKey: allTimeEntriesKey,
-    queryFn: async () => (await api.get("/time-entries")).data,
+    queryFn: async () => {
+      const res = await api.get("/time-entries");
+      return Array.isArray(res.data) ? res.data : [];
+    },
   });
 
   const { data: shiftsList = [] } = useQuery<ShiftDef[]>({
     queryKey: shiftsKey,
-    queryFn: async () => (await api.get("/shifts")).data,
+    queryFn: async () => {
+      const res = await api.get("/shifts");
+      return Array.isArray(res.data) ? res.data : [];
+    },
   });
 
   const { data: timesheetsList = [] } = useQuery<TimesheetEntry[]>({
     queryKey: timesheetsKey,
-    queryFn: async () => (await api.get("/timesheets")).data,
+    queryFn: async () => {
+      const res = await api.get("/timesheets");
+      return Array.isArray(res.data) ? res.data : [];
+    },
   });
 
   // Clock In mutation
