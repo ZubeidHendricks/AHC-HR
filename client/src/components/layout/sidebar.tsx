@@ -1,0 +1,197 @@
+import { Link, useLocation } from "wouter";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  UserSearch,
+  Users,
+  Briefcase,
+  TrendingUp,
+  Shield,
+  Building2,
+  FileText,
+  MessageCircle,
+  Target,
+  BarChart3,
+  Star,
+  UserCheck,
+  Settings,
+  BookOpen,
+  Mic,
+  Video,
+  ClipboardList,
+  Sparkles,
+  LayoutGrid,
+  UserPlus,
+  Truck,
+  ChevronLeft,
+  ChevronRight,
+  Bot,
+  Cpu,
+  Crosshair,
+  Heart,
+  Scale
+} from "lucide-react";
+import { useTenant } from "@/hooks/useTenant";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  module?: string;
+  external?: boolean;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+export function Sidebar() {
+  const [location] = useLocation();
+  const { isModuleEnabled } = useTenant();
+  const [collapsed, setCollapsed] = useState(false);
+
+  const sections: NavSection[] = [
+    {
+      title: "INTELLIGENCE",
+      items: [
+        { name: "HRM-GPT", href: "/workforce-intelligence", icon: Bot },
+        { name: "Executive Dashboard", href: "/executive-dashboard-custom", icon: TrendingUp },
+        { name: "Reports", href: "/recommendations", icon: BarChart3 },
+        { name: "WhatsApp Monitor", href: "/whatsapp-monitor", icon: MessageCircle },
+      ]
+    },
+    {
+      title: "HR MANAGEMENT",
+      items: [
+        { name: "KPI's", href: "/kpi-management", icon: Target },
+        { name: "OKR's", href: "/okr-management", icon: Crosshair },
+        { name: "Leave", href: "/leave-management", icon: ClipboardList },
+        { name: "Claims", href: "/claims-management", icon: FileText },
+        { name: "Pulse Survey", href: "/pulse-survey", icon: Heart },
+        { name: "Compliance", href: "/compliance", icon: Scale },
+        { name: "Time & Attendance", href: "https://carta-ta-ji5og.ondigitalocean.app/", icon: Cpu, external: true },
+        { name: "LMS", href: "http://165.227.113.197/", icon: BookOpen, external: true },
+      ]
+    },
+    {
+      title: "SETUP",
+      items: [
+        { name: "KPI Setup", href: "/kpi-hr-dashboard", icon: Target },
+        { name: "Leave Setup", href: "/leave-setup", icon: ClipboardList },
+        { name: "Claims Setup", href: "/claims-setup", icon: FileText },
+        { name: "Wellness Setup", href: "/wellness-setup", icon: Heart },
+        { name: "Document Automation", href: "/document-automation", icon: FileText },
+        { name: "Document Library", href: "/document-library", icon: ClipboardList },
+      ]
+    },
+    {
+      title: "ADMIN",
+      items: [
+        { name: "System Admin", href: "/admin-dashboard", icon: Settings },
+        { name: "Platform Docs", href: "/platform-docs", icon: BookOpen },
+      ]
+    },
+  ];
+
+  const isActive = (href: string) => {
+    if (href === "/") return location === "/";
+    return location.startsWith(href);
+  };
+
+  return (
+    <aside className={cn(
+      "sidebar-nav fixed left-0 top-0 h-screen bg-card border-r border-border flex flex-col transition-all duration-300 z-50",
+      collapsed ? "w-16" : "w-60"
+    )}>
+      {/* Logo */}
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        {!collapsed && (
+          <Link href="/">
+            <div className="bg-gray-100 dark:bg-zinc-900 rounded-lg px-3 py-1.5">
+              <img 
+                src="/logos/light-logo.png" 
+                alt="AHC" 
+                className="h-8 w-auto object-contain"
+              />
+            </div>
+          </Link>
+        )}
+        <button 
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-4 px-2">
+        {sections.map((section) => {
+          const visibleItems = section.items.filter(item => 
+            !item.module || isModuleEnabled(item.module)
+          );
+          
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={section.title} className="mb-4">
+              {!collapsed && (
+                <h3 className="px-3 mb-2 text-[10px] font-bold text-foreground/60 tracking-wider uppercase">
+                  {section.title}
+                </h3>
+              )}
+              <ul className="space-y-0.5">
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  
+                  return (
+                    <li key={item.href}>
+                      {item.external ? (
+                        <a href={item.href} target="_blank" rel="noopener noreferrer">
+                          <div className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer group relative",
+                            "text-muted-foreground hover:bg-accent hover:text-foreground"
+                          )}>
+                            <Icon className="w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-foreground" />
+                            {!collapsed && <span>{item.name}</span>}
+                          </div>
+                        </a>
+                      ) : (
+                        <Link href={item.href}>
+                          <div className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer group relative",
+                            active 
+                              ? "bg-primary/10 text-primary" 
+                              : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                          )}>
+                            {active && (
+                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+                            )}
+                            <Icon className={cn(
+                              "w-4 h-4 flex-shrink-0",
+                              active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                            )} />
+                            {!collapsed && <span>{item.name}</span>}
+                          </div>
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-3 border-t border-border flex items-center justify-center">
+        <ThemeToggle />
+      </div>
+    </aside>
+  );
+}
